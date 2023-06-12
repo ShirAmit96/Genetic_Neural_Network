@@ -140,27 +140,34 @@ class Genetic_Algorithm:
             # randomly choose 2 parents:
             parent_1 = random.sample(population, 1)[0]
             parent_2 = random.sample(population, 1)[0]
-            flattened_par1 = np.asarray(parent_1[0].network).flatten()
-            flattened_par2 = np.asarray(parent_2[0].network).flatten()
+            parent_1_nn = np.array(parent_1[0].network)
+            parent_2_nn = np.array(parent_2[0].network)
+            # Flatten the array
+            flattened_par1 = parent_1_nn.flatten()
+            flattened_par2 = parent_2_nn.flatten()
+            larger=0
             # Determine the larger and smaller matrices
             if flattened_par1.size >= flattened_par2.size:
                 larger_mat = flattened_par1
                 smaller_mat = flattened_par2
-                larger_shape = np.asarray(parent_1[0].network).shape
+                larger=1
             else:
                 larger_mat = flattened_par2
                 smaller_mat = flattened_par1
-                larger_shape = np.asarray(parent_2[0].network).shape
+                larger=2
+
             # Choose a random index within the range of the smaller matrix
             chosen_index = np.random.randint(smaller_mat.size)
             # Copy values from the smaller matrix to the larger matrix until the chosen index
             larger_mat[:chosen_index] = smaller_mat[:chosen_index]
-
-            # Reshape the larger matrix to its original shape
-            child = larger_mat.reshape(larger_shape)
+            if larger==1:
+                # Reshape the larger matrix to its original shape
+                child = larger_mat.reshape(parent_1_nn.shape)
+            else:
+                child= larger_mat.reshape(parent_2_nn.shape)
             layer_sizes = [layer.shape[0] for layer in child]
             child_nn = NeuralNetwork(layer_sizes, child, False)
-            child_fit = child.compute_fitness(train_inputs, train_labels)
+            child_fit = child_nn.compute_fitness(train_inputs, train_labels)
             population.append((child_nn, child_fit))
 
     def mutate(self, mutation_list):
@@ -208,6 +215,7 @@ class Genetic_Algorithm:
             best_fit = population[0][1]
             if count_same_fit> convergence_limit:
                 return population[0]
+        return population[0]
 
 
 
