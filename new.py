@@ -41,9 +41,9 @@ def load_data():
     return train_input,train_label,test_input,test_label
 
 train_inputs, train_labels, test_inputs, test_labels = load_data()
-num_offsprings = 50
+num_offsprings = 10
 mutation_rate = 20
-generations = 100
+generations = 5
 convergence_limit= 10
 class NeuralNetwork:
     def __init__(self, layer_sizes,matrix=[], new=True):
@@ -107,7 +107,7 @@ class NeuralNetwork:
 
 # Assuming NeuralNetwork is the class defined earlier
 population = []
-population_size = 2
+population_size = 10
 
 
 def create_population():
@@ -156,8 +156,8 @@ class Genetic_Algorithm:
         for i in range(num_of_offsprings):
             # randomly choose 2 parents:
             parent_1, parent_2 = random.sample(population, 2)
-            parent_1_nn = np.array(parent_1[0].network)
-            parent_2_nn = np.array(parent_2[0].network)
+            parent_1_nn = parent_1[0].network
+            parent_2_nn = parent_2[0].network
             # Flatten the array
             flattened_par1 = flatten_list(parent_1_nn)
             flattened_par2 = flatten_list(parent_2_nn)
@@ -179,34 +179,36 @@ class Genetic_Algorithm:
             if larger==1:
                 # Reshape the larger matrix to its original shape
                 child = reshape_list(larger_mat,parent_1[0].layer_sizes)
+                layer_sizes=parent_1[0].layer_sizes
             else:
                 child=reshape_list(larger_mat, parent_2[0].layer_sizes)
-            layer_sizes = [layer.shape[0] for layer in child]
+                layer_sizes = parent_2[0].layer_sizes
             child_nn = NeuralNetwork(layer_sizes, child, False)
             child_fit = child_nn.compute_fitness(train_inputs, train_labels)
             population.append((child_nn, child_fit))
+            print("crossover :", i)
 
     def mutate(self, mutation_list):
-        global population, train_labels,train_inputs
-        new_list = []
+        global population, train_labels, train_inputs
         for nn, fitness in mutation_list:
-            # Create a random mask based on the probability
-            mask = np.random.choice([0, 1], size=nn.network.shape, p=[0.9, 0.1])
+            for matrix in nn.network:
+                # Create a random mask based on the probability
+                mask = np.random.choice([0, 1], size=matrix.shape, p=[0.9, 0.1])
 
-            # Iterate over the matrix using nditer
-            with np.nditer(nn.network, op_flags=['readwrite']) as it:
-                for cell in it:
-                    # Check if the corresponding mask cell is 1 (True)
-                    if mask[it.multi_index]:
-                        # Add a random value between -1 and 1 to the current cell
-                        cell[...] += np.random.uniform(-1, 1)
+                # Iterate over the matrix
+                for i, row in enumerate(matrix):
+                    for j, cell in enumerate(row):
+                        # Check if the corresponding mask cell is 1 (True)
+                        if mask[i, j]:
+                            # Add a random value between -1 and 1 to the current cell
+                            matrix[i, j] += np.random.uniform(-1, 1)
             matrix_fit = nn.compute_fitness(train_inputs, train_labels)
-            new_list.append(nn, matrix_fit)
-
+            population.append((nn, matrix_fit))
+            print("mut :", fitness)
 
     def evolve_pop(self):
         global population, population_size ,mutation_rate, generations,convergence_limit
-        best_fit = 1
+        best_fit = float('inf')
         count_same_fit = 0
         for i in range(generations):
             print(i)
@@ -219,7 +221,6 @@ class Genetic_Algorithm:
             # mutate 20 randon nn's from the population:
             mutation_list = random.sample(population, k=mutation_rate)
             self.mutate(mutation_list)
-            population.extend(mutation_list)
             population.extend(elitism_list)
             # sort the list again:
             population = sorted(population, key=lambda x: x[1])
@@ -251,7 +252,7 @@ def flow():
     # evolve population using GA:
     GA = Genetic_Algorithm()
     chosen_nn = GA.evolve_pop()
-    accuracy = chosen_nn.compute_accuracy(test_inputs,test_labels)
+    accuracy = chosen_nn[0].compute_accuracy(test_inputs,test_labels)
     print("accuracy: ", accuracy)
 
 
