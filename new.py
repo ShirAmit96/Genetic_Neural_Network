@@ -127,6 +127,23 @@ def create_population():
         nn = NeuralNetwork(layer_sizes)
         population.append((nn,0))
 
+def flatten_list(lst):
+    flattened = []
+    for sublist1 in lst:
+        for sublist2 in sublist1:
+            for item in sublist2:
+                flattened.append(item)
+    return flattened
+
+
+def reshape_list(flattened, dimensions):
+    reshaped = []
+    index = 0
+    for dim1, dim2 in zip(dimensions[:-1], dimensions[1:]):
+        sublist = np.array(flattened[index: index + (dim1 * dim2)]).reshape((dim1, dim2))
+        index += dim1 * dim2
+        reshaped.append(sublist)
+    return reshaped
 
 
 # This class represent a genetic algorithm object that evolves the nn population.
@@ -138,16 +155,15 @@ class Genetic_Algorithm:
         global population,train_inputs, train_labels, test_inputs, test_labels, num_offsprings
         for i in range(num_of_offsprings):
             # randomly choose 2 parents:
-            parent_1 = random.sample(population, 1)[0]
-            parent_2 = random.sample(population, 1)[0]
+            parent_1, parent_2 = random.sample(population, 2)
             parent_1_nn = np.array(parent_1[0].network)
             parent_2_nn = np.array(parent_2[0].network)
             # Flatten the array
-            flattened_par1 = parent_1_nn.flatten()
-            flattened_par2 = parent_2_nn.flatten()
+            flattened_par1 = flatten_list(parent_1_nn)
+            flattened_par2 = flatten_list(parent_2_nn)
             larger=0
             # Determine the larger and smaller matrices
-            if flattened_par1.size >= flattened_par2.size:
+            if len(flattened_par1) >= len(flattened_par2):
                 larger_mat = flattened_par1
                 smaller_mat = flattened_par2
                 larger=1
@@ -157,14 +173,14 @@ class Genetic_Algorithm:
                 larger=2
 
             # Choose a random index within the range of the smaller matrix
-            chosen_index = np.random.randint(smaller_mat.size)
+            chosen_index = np.random.randint(len(smaller_mat)-1)
             # Copy values from the smaller matrix to the larger matrix until the chosen index
             larger_mat[:chosen_index] = smaller_mat[:chosen_index]
             if larger==1:
                 # Reshape the larger matrix to its original shape
-                child = larger_mat.reshape(parent_1_nn.shape)
+                child = reshape_list(larger_mat,parent_1[0].layer_sizes)
             else:
-                child= larger_mat.reshape(parent_2_nn.shape)
+                child=reshape_list(larger_mat, parent_2[0].layer_sizes)
             layer_sizes = [layer.shape[0] for layer in child]
             child_nn = NeuralNetwork(layer_sizes, child, False)
             child_fit = child_nn.compute_fitness(train_inputs, train_labels)
