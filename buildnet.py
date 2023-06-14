@@ -28,9 +28,13 @@ class NeuralNetwork:
     def _weighted_sum(self, weights, inputs):
         return np.dot(inputs, weights)
 
-    def _activate(self, activation):
+    def _activate_sigmoid(self, activation):
         # Sigmoid activation function
         return 1.0 / (1.0 + np.exp(-activation))
+
+    def _activate(self, activation):
+        # ReLU activation function
+        return np.maximum(0, activation)
 
     # This function does the forward propgation.
     def forward_propagate(self, inputs):
@@ -46,7 +50,7 @@ class NeuralNetwork:
                 sum = self._weighted_sum(weights, inputs)
                 new_inputs.append(self._activate(sum))
             # Transpose for the shapes to fit
-            inputs = np.array(new_inputs).T  
+            inputs = np.array(new_inputs).T
         return inputs
 
     def compute_fitness(self, inputs, labels):
@@ -64,7 +68,7 @@ population_size = 2
 def create_population():
     for _ in range(population_size):
         # Random number of hidden layers (between 2 and 4)
-        n_hidden_layers = random.randint(2, 4)
+        n_hidden_layers = random.randint(1, 2)
 
         # Random layer sizes (between 5 and 10)
         layer_sizes = [random.randint(5, 10) for _ in range(n_hidden_layers)]
