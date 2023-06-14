@@ -67,9 +67,13 @@ class NeuralNetwork:
     def _weighted_sum(self, weights, inputs):
         return np.dot(inputs, weights)
 
-    def _activate(self, activation):
+    def _activate_sigmoid(self, activation):
         # Sigmoid activation function
         return 1.0 / (1.0 + np.exp(-activation))
+
+    def _activate(self, activation):
+        # ReLU activation function
+        return np.maximum(0, activation)
 
     # This function does the forward propgation.
     def forward_propagate(self, inputs):
