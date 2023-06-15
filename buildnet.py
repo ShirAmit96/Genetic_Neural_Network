@@ -43,11 +43,11 @@ def load_data():
 
 train_inputs, train_labels, test_inputs, test_labels = load_data()
 population = []
-population_size = 200
-num_offsprings = 100
+population_size = 500
+num_offsprings = 200
 mutation_rate = 200
 generations = 200
-convergence_limit= 15
+convergence_limit= 30
 class NeuralNetwork:
     def __init__(self, layer_sizes,matrix=[], new=True):
         self.layer_sizes = layer_sizes
@@ -124,11 +124,10 @@ def create_population():
     global population_size, population
     for _ in range(population_size):
         # Random number of hidden layers (between 2 and 4)
-        n_hidden_layers = random.randint(1, 2)
+        n_hidden_layers = random.randint(1, 3)
 
         # Random layer sizes (between 5 and 10)
-        random.sample([2, 8, 16], 1)
-        layer_sizes = [random.sample([2, 8, 16], 1)[0] for _ in range(n_hidden_layers)]
+        layer_sizes = [random.sample([2, 4, 8], 1)[0] for _ in range(n_hidden_layers)]
 
         # Input layer
         layer_sizes.insert(0, 16)
@@ -227,7 +226,7 @@ class Genetic_Algorithm:
             # sort the pop by fitness:
             population = sorted(population, key=lambda x: x[1],reverse=True)
             # save the top 10 nn's (elitism):
-            elitism_list = population[:10]
+            elitism_list = population[:1]
             # create 50 offsprings using crossover:
             self.crossover(num_offsprings)
             # mutate 20 randon nn's from the population:
