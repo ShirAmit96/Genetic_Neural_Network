@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import copy
 # Init a  population of neural network - aka weights.
 # The nn is 2-3 layers - random between 2-4
 # The size of each layer also a random parameter - 5-10
@@ -41,10 +42,12 @@ def load_data():
     return train_input,train_label,test_input,test_label
 
 train_inputs, train_labels, test_inputs, test_labels = load_data()
-num_offsprings = 10
-mutation_rate = 20
-generations = 5
-convergence_limit= 10
+population = []
+population_size = 200
+num_offsprings = 100
+mutation_rate = 200
+generations = 200
+convergence_limit= 15
 class NeuralNetwork:
     def __init__(self, layer_sizes,matrix=[], new=True):
         self.layer_sizes = layer_sizes
@@ -71,10 +74,12 @@ class NeuralNetwork:
         # Sigmoid activation function
         return 1.0 / (1.0 + np.exp(-activation))
 
-    def _activate(self, activation):
+    def _activate_rellu(self, activation):
         # ReLU activation function
         return np.maximum(0, activation)
 
+    def _activate(self, activation):
+        return np.maximum(0.1 * activation,activation)
     # This function does the forward propgation.
     def forward_propagate(self, inputs):
         # Convert inputs list to a 2D array
@@ -92,15 +97,18 @@ class NeuralNetwork:
             inputs = np.array(new_inputs).T
         return inputs
 
-    def compute_fitness(self, inputs, labels):
-        predictions = self.forward_propagate(inputs)
-        # Calc the cross entropy loss
-        loss = -np.mean(np.log(predictions) * labels + np.log(1 - predictions) * (1 - labels))
-        return loss
+    # def compute_fitness(self, inputs, labels):
+    #     predictions = self.forward_propagate(inputs)
+    #     # Calc the cross entropy loss
+    #     loss = -np.mean(np.log(predictions) * labels + np.log(1 - predictions) * (1 - labels))
+    #     return loss
 
-    def compute_accuracy(self, inputs, labels):
+    def compute_fitness(self, inputs, labels):
         right_count = 0
-        predictions = self.forward_propagate(inputs)
+        outputs = self.forward_propagate(inputs)
+        # Converts the output of the final layer to binary predictions
+        binary_predictions = (outputs > 0.5).astype(int)
+        predictions = binary_predictions.flatten()
         total = len(predictions)
         for label, pred_label in zip(labels,predictions):
             if label == pred_label:
@@ -109,19 +117,18 @@ class NeuralNetwork:
         return accuracy
 
 
-# Assuming NeuralNetwork is the class defined earlier
-population = []
-population_size = 10
+
 
 
 def create_population():
     global population_size, population
     for _ in range(population_size):
         # Random number of hidden layers (between 2 and 4)
-        n_hidden_layers = random.randint(2, 4)
+        n_hidden_layers = random.randint(1, 2)
 
         # Random layer sizes (between 5 and 10)
-        layer_sizes = [random.randint(5, 10) for _ in range(n_hidden_layers)]
+        random.sample([2, 8, 16], 1)
+        layer_sizes = [random.sample([2, 8, 16], 1)[0] for _ in range(n_hidden_layers)]
 
         # Input layer
         layer_sizes.insert(0, 16)
@@ -166,38 +173,39 @@ class Genetic_Algorithm:
             flattened_par1 = flatten_list(parent_1_nn)
             flattened_par2 = flatten_list(parent_2_nn)
             larger=0
-            # Determine the larger and smaller matrices
+            # choose the parent with the bigger fitness:
+            if parent_1[1]>parent_2[1]:
+                child= copy.deepcopy(flattened_par1)
+                chosen_sizes= parent_1[0].layer_sizes
+                better = 1
+            else:
+                child = copy.deepcopy(flattened_par2)
+                chosen_sizes= parent_2[0].layer_sizes
+                better = 2
+            # choose index from the smaller matrix:
             if len(flattened_par1) >= len(flattened_par2):
-                larger_mat = flattened_par1
-                smaller_mat = flattened_par2
-                larger=1
+                chosen_index = np.random.randint(len(flattened_par2)-1)
             else:
-                larger_mat = flattened_par2
-                smaller_mat = flattened_par1
-                larger=2
+                chosen_index=np.random.randint(len(flattened_par1)-1)
 
-            # Choose a random index within the range of the smaller matrix
-            chosen_index = np.random.randint(len(smaller_mat)-1)
-            # Copy values from the smaller matrix to the larger matrix until the chosen index
-            larger_mat[:chosen_index] = smaller_mat[:chosen_index]
-            if larger==1:
-                # Reshape the larger matrix to its original shape
-                child = reshape_list(larger_mat,parent_1[0].layer_sizes)
-                layer_sizes=parent_1[0].layer_sizes
+            # Copy values from the one matrix to the second matrix until the chosen index:
+            if better==1:
+                child[:chosen_index] = copy.deepcopy(flattened_par2[:chosen_index])
             else:
-                child=reshape_list(larger_mat, parent_2[0].layer_sizes)
-                layer_sizes = parent_2[0].layer_sizes
-            child_nn = NeuralNetwork(layer_sizes, child, False)
+                child[:chosen_index] = copy.deepcopy(flattened_par1[:chosen_index])
+            # Reshape the larger matrix to its original shape:
+            child = reshape_list(child, chosen_sizes)
+
+            child_nn = NeuralNetwork(chosen_sizes, child, False)
             child_fit = child_nn.compute_fitness(train_inputs, train_labels)
             population.append((child_nn, child_fit))
-            print("crossover :", i)
 
     def mutate(self, mutation_list):
         global population, train_labels, train_inputs
         for nn, fitness in mutation_list:
             for matrix in nn.network:
                 # Create a random mask based on the probability
-                mask = np.random.choice([0, 1], size=matrix.shape, p=[0.9, 0.1])
+                mask = np.random.choice([0, 1], size=matrix.shape, p=[0.3, 0.7])
 
                 # Iterate over the matrix
                 for i, row in enumerate(matrix):
@@ -208,7 +216,7 @@ class Genetic_Algorithm:
                             matrix[i, j] += np.random.uniform(-1, 1)
             matrix_fit = nn.compute_fitness(train_inputs, train_labels)
             population.append((nn, matrix_fit))
-            print("mut :", fitness)
+
 
     def evolve_pop(self):
         global population, population_size ,mutation_rate, generations,convergence_limit
@@ -217,7 +225,7 @@ class Genetic_Algorithm:
         for i in range(generations):
             print(i)
             # sort the pop by fitness:
-            population = sorted(population, key=lambda x: x[1])
+            population = sorted(population, key=lambda x: x[1],reverse=True)
             # save the top 10 nn's (elitism):
             elitism_list = population[:10]
             # create 50 offsprings using crossover:
@@ -227,9 +235,11 @@ class Genetic_Algorithm:
             self.mutate(mutation_list)
             population.extend(elitism_list)
             # sort the list again:
-            population = sorted(population, key=lambda x: x[1])
+            population = sorted(population, key=lambda x: x[1],reverse=True)
             # take only the top 100 nn's:
             population = population[:population_size]
+            for individual in population:
+                print(individual[1])
             # check convergence:
             if population[0][1]==best_fit:
                 count_same_fit+=1
@@ -239,6 +249,10 @@ class Genetic_Algorithm:
         return population[0]
 
 
+
+
+
+
 def flow():
     global population
     create_population()
@@ -246,13 +260,13 @@ def flow():
     for i in range(len(population)):
                 nn = population[i][0]
                 loss = nn.compute_fitness(train_inputs, train_labels)
-                layers = len(nn.layer_sizes)
                 print("creating individual num:", i )
                 population[i] = (nn, loss)
     # evolve population using GA:
     GA = Genetic_Algorithm()
     chosen_nn = GA.evolve_pop()
-    accuracy = chosen_nn[0].compute_accuracy(test_inputs,test_labels)
+    accuracy = chosen_nn[0].compute_fitness(test_inputs,test_labels)
+    print("on train: ",chosen_nn[1])
     print("accuracy: ", accuracy)
 
 
