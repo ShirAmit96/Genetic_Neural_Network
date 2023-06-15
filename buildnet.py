@@ -252,6 +252,7 @@ class Genetic_Algorithm:
 
 
 
+
 def flow():
     global population
     create_population()
