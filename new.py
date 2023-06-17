@@ -43,11 +43,11 @@ def load_data():
 
 train_inputs, train_labels, test_inputs, test_labels = load_data()
 population = []
-population_size = 200
-num_offsprings = 100
-mutation_rate = 200
+population_size = 500
+num_offsprings = 500
+mutation_rate = 1000
 generations = 200
-convergence_limit= 15
+convergence_limit= 100
 class NeuralNetwork:
     def __init__(self, layer_sizes,matrix=[], new=True):
         self.layer_sizes = layer_sizes
@@ -79,7 +79,7 @@ class NeuralNetwork:
         return np.maximum(0, activation)
 
     def _activate(self, activation):
-        return np.maximum(0.1 * activation,activation)
+        return np.maximum(0.1* activation,activation)
     # This function does the forward propgation.
     def forward_propagate(self, inputs):
         # Convert inputs list to a 2D array
@@ -92,7 +92,7 @@ class NeuralNetwork:
                 # Make sure the shapes of weights and inputs match for dot product
                 weights = np.reshape(self.network[i][:, j], (-1,))
                 sum = self._weighted_sum(weights, inputs)
-                new_inputs.append(self._activate(sum))
+                new_inputs.append(self._activate_sigmoid(sum))
             # Transpose for the shapes to fit
             inputs = np.array(new_inputs).T
         return inputs
@@ -124,11 +124,10 @@ def create_population():
     global population_size, population
     for _ in range(population_size):
         # Random number of hidden layers (between 2 and 4)
-        n_hidden_layers = random.randint(1, 2)
+        n_hidden_layers = random.randint(1, 3)
 
         # Random layer sizes (between 5 and 10)
-        random.sample([2, 8, 16], 1)
-        layer_sizes = [random.sample([2, 8, 16], 1)[0] for _ in range(n_hidden_layers)]
+        layer_sizes = [random.sample([2, 4, 8], 1)[0] for _ in range(n_hidden_layers)]
 
         # Input layer
         layer_sizes.insert(0, 16)
@@ -205,7 +204,7 @@ class Genetic_Algorithm:
         for nn, fitness in mutation_list:
             for matrix in nn.network:
                 # Create a random mask based on the probability
-                mask = np.random.choice([0, 1], size=matrix.shape, p=[0.3, 0.7])
+                mask = np.random.choice([0, 1], size=matrix.shape, p=[0, 1])
 
                 # Iterate over the matrix
                 for i, row in enumerate(matrix):
@@ -220,10 +219,9 @@ class Genetic_Algorithm:
 
     def evolve_pop(self):
         global population, population_size ,mutation_rate, generations,convergence_limit
-        best_fit = float('inf')
+        best_fit =0
         count_same_fit = 0
         for i in range(generations):
-            print(i)
             # sort the pop by fitness:
             population = sorted(population, key=lambda x: x[1],reverse=True)
             # save the top 10 nn's (elitism):
@@ -238,15 +236,15 @@ class Genetic_Algorithm:
             population = sorted(population, key=lambda x: x[1],reverse=True)
             # take only the top 100 nn's:
             population = population[:population_size]
-            for individual in population:
-                print(individual[1])
             # check convergence:
-            if population[0][1]==best_fit:
-                count_same_fit+=1
+            if population[0][1] == best_fit:
+                count_same_fit += 1
             best_fit = population[0][1]
-            if count_same_fit> convergence_limit:
+            if count_same_fit > convergence_limit:
                 return population[0]
+            print ("gen: ", i, "best nn fitness: ",best_fit )
         return population[0]
+
 
 
 
@@ -260,7 +258,6 @@ def flow():
     for i in range(len(population)):
                 nn = population[i][0]
                 loss = nn.compute_fitness(train_inputs, train_labels)
-                print("creating individual num:", i )
                 population[i] = (nn, loss)
     # evolve population using GA:
     GA = Genetic_Algorithm()
