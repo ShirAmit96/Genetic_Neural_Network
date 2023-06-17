@@ -1,6 +1,8 @@
 import numpy as np
 import random
 import copy
+
+
 # Init a  population of neural network - aka weights.
 # The nn is 2-3 layers - random between 2-4
 # The size of each layer also a random parameter - 5-10
@@ -39,17 +41,20 @@ def load_data():
     test_input = inputs[n_train:]
     test_label = labels[n_train:]
 
-    return train_input,train_label,test_input,test_label
+    return train_input, train_label, test_input, test_label
+
 
 train_inputs, train_labels, test_inputs, test_labels = load_data()
 population = []
-population_size = 500
-num_offsprings = 200
-mutation_rate = 200
+population_size = 1000
+num_offsprings = 500
+mutation_rate = 990
 generations = 200
-convergence_limit= 30
+convergence_limit = 30
+
+
 class NeuralNetwork:
-    def __init__(self, layer_sizes,matrix=[], new=True):
+    def __init__(self, layer_sizes, matrix=[], new=True):
         self.layer_sizes = layer_sizes
         if new:
             self.network = self._initialize_network()
@@ -60,11 +65,11 @@ class NeuralNetwork:
         # Initialize the weights for each layer in the network
         network = []
         for i in range(len(self.layer_sizes) - 1):
-            # Randomly initialize the weights
-            weight_matrix = np.random.uniform(-1, 1, size=(self.layer_sizes[i], self.layer_sizes[i+1]))
+            # Initialize the weights using Xavier initialization
+            limit = np.sqrt(6 / (self.layer_sizes[i] + self.layer_sizes[i + 1]))
+            weight_matrix = np.random.uniform(-limit, limit, size=(self.layer_sizes[i], self.layer_sizes[i + 1]))
             network.append(weight_matrix)
         return network
-
 
     # Multiply the weights with the inputs and sum all the products.
     def _weighted_sum(self, weights, inputs):
@@ -78,8 +83,9 @@ class NeuralNetwork:
         # ReLU activation function
         return np.maximum(0, activation)
 
-    def _activate(self, activation):
-        return np.maximum(0.1 * activation,activation)
+    def _activate(self, activation, alpha = 0.01):
+        return np.maximum(alpha * activation, activation)
+
     # This function does the forward propgation.
     def forward_propagate(self, inputs):
         # Convert inputs list to a 2D array
@@ -92,7 +98,11 @@ class NeuralNetwork:
                 # Make sure the shapes of weights and inputs match for dot product
                 weights = np.reshape(self.network[i][:, j], (-1,))
                 sum = self._weighted_sum(weights, inputs)
-                new_inputs.append(self._activate(sum))
+                # This for the case where for the first layers we use differnt function than sigmoid
+                if i == len(self.network) - 1:  # last layer
+                    new_inputs.append(self._activate_sigmoid(sum))
+                else:  # other layers
+                    new_inputs.append(self._activate_sigmoid(sum))
             # Transpose for the shapes to fit
             inputs = np.array(new_inputs).T
         return inputs
@@ -110,14 +120,11 @@ class NeuralNetwork:
         binary_predictions = (outputs > 0.5).astype(int)
         predictions = binary_predictions.flatten()
         total = len(predictions)
-        for label, pred_label in zip(labels,predictions):
+        for label, pred_label in zip(labels, predictions):
             if label == pred_label:
-                right_count+=1
-        accuracy = right_count/total
+                right_count += 1
+        accuracy = right_count / total
         return accuracy
-
-
-
 
 
 def create_population():
@@ -135,7 +142,8 @@ def create_population():
         layer_sizes.append(1)
 
         nn = NeuralNetwork(layer_sizes)
-        population.append((nn,0))
+        population.append((nn, 0))
+
 
 def flatten_list(lst):
     flattened = []
@@ -162,7 +170,7 @@ class Genetic_Algorithm:
         pass
 
     def crossover(self, num_of_offsprings):
-        global population,train_inputs, train_labels, test_inputs, test_labels, num_offsprings
+        global population, train_inputs, train_labels, test_inputs, test_labels, num_offsprings
         for i in range(num_of_offsprings):
             # randomly choose 2 parents:
             parent_1, parent_2 = random.sample(population, 2)
@@ -171,24 +179,24 @@ class Genetic_Algorithm:
             # Flatten the array
             flattened_par1 = flatten_list(parent_1_nn)
             flattened_par2 = flatten_list(parent_2_nn)
-            larger=0
+            larger = 0
             # choose the parent with the bigger fitness:
-            if parent_1[1]>parent_2[1]:
-                child= copy.deepcopy(flattened_par1)
-                chosen_sizes= parent_1[0].layer_sizes
+            if parent_1[1] > parent_2[1]:
+                child = copy.deepcopy(flattened_par1)
+                chosen_sizes = parent_1[0].layer_sizes
                 better = 1
             else:
                 child = copy.deepcopy(flattened_par2)
-                chosen_sizes= parent_2[0].layer_sizes
+                chosen_sizes = parent_2[0].layer_sizes
                 better = 2
             # choose index from the smaller matrix:
             if len(flattened_par1) >= len(flattened_par2):
-                chosen_index = np.random.randint(len(flattened_par2)-1)
+                chosen_index = np.random.randint(len(flattened_par2) - 1)
             else:
-                chosen_index=np.random.randint(len(flattened_par1)-1)
+                chosen_index = np.random.randint(len(flattened_par1) - 1)
 
             # Copy values from the one matrix to the second matrix until the chosen index:
-            if better==1:
+            if better == 1:
                 child[:chosen_index] = copy.deepcopy(flattened_par2[:chosen_index])
             else:
                 child[:chosen_index] = copy.deepcopy(flattened_par1[:chosen_index])
@@ -216,15 +224,14 @@ class Genetic_Algorithm:
             matrix_fit = nn.compute_fitness(train_inputs, train_labels)
             population.append((nn, matrix_fit))
 
-
     def evolve_pop(self):
-        global population, population_size ,mutation_rate, generations,convergence_limit
+        global population, population_size, mutation_rate, generations, convergence_limit
         best_fit = float('inf')
         count_same_fit = 0
         for i in range(generations):
-            print(i)
+            # print(i)
             # sort the pop by fitness:
-            population = sorted(population, key=lambda x: x[1],reverse=True)
+            population = sorted(population, key=lambda x: x[1], reverse=True)
             # save the top 10 nn's (elitism):
             elitism_list = population[:1]
             # create 50 offsprings using crossover:
@@ -234,55 +241,52 @@ class Genetic_Algorithm:
             self.mutate(mutation_list)
             population.extend(elitism_list)
             # sort the list again:
-            population = sorted(population, key=lambda x: x[1],reverse=True)
+            population = sorted(population, key=lambda x: x[1], reverse=True)
             # take only the top 100 nn's:
             population = population[:population_size]
-            for individual in population:
-                print(individual[1])
+            print(population[0])
+            # for individual in population:
+            # print(individual[1])
             # check convergence:
-            if population[0][1]==best_fit:
-                count_same_fit+=1
+            if population[0][1] == best_fit:
+                count_same_fit += 1
             best_fit = population[0][1]
-            if count_same_fit> convergence_limit:
+            if count_same_fit > convergence_limit:
                 return population[0]
         return population[0]
 
 
-
-
-
-
-
 def flow():
     global population
+    higest_fitness = 0
     create_population()
     global train_inputs, train_labels, test_inputs, test_labels
     for i in range(len(population)):
-                nn = population[i][0]
-                loss = nn.compute_fitness(train_inputs, train_labels)
-                print("creating individual num:", i )
-                population[i] = (nn, loss)
+        nn = population[i][0]
+        loss = nn.compute_fitness(train_inputs, train_labels)
+        if loss > higest_fitness:
+            higest_fitness = loss
+        # print("creating individual num:", i )
+        population[i] = (nn, loss)
     # evolve population using GA:
+    print(higest_fitness)
     GA = Genetic_Algorithm()
     chosen_nn = GA.evolve_pop()
-    accuracy = chosen_nn[0].compute_fitness(test_inputs,test_labels)
-    print("on train: ",chosen_nn[1])
+    accuracy = chosen_nn[0].compute_fitness(test_inputs, test_labels)
+    print("on train: ", chosen_nn[1])
     print("accuracy: ", accuracy)
 
+    # sort the  fitness list so the smallest fitness will be first:
+    # save the top nn's (elitisem):
+    # create offsprings using crssover:
+    # perform mutation on 5 perecnt of
 
+    # For my test:
+    # for nn in population:
+    #     for i in range(len(nn.network)):
+    #         nn.network[i] += random.random()
 
-        # sort the  fitness list so the smallest fitness will be first:
-        # save the top nn's (elitisem):
-        # create offsprings using crssover:
-        # perform mutation on 5 perecnt of
+    # Create new population
 
-
-        # For my test:
-        # for nn in population:
-        #     for i in range(len(nn.network)):
-        #         nn.network[i] += random.random()
-
-
-        # Create new population
 
 flow()
