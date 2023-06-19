@@ -13,6 +13,8 @@ import copy
 # Choose the model weights and structure using the test set.
 
 # This class represent a neural network object.
+import random
+
 def load_data():
     # Read the data from the file
     with open('nn0.txt', 'r') as f:
@@ -28,12 +30,17 @@ def load_data():
         # Convert the label to an integer
         labels.append(int(label))
 
-    # Convert lists to numpy arrays
-    inputs = np.array(inputs)
-    labels = np.array(labels)
     # Combine inputs and labels into a single array for shuffling
     data = list(zip(inputs, labels))
     random.shuffle(data)
+
+    # Convert the shuffled data back to separate inputs and labels
+    inputs, labels = zip(*data)
+
+    # Convert lists to numpy arrays
+    inputs = np.array(inputs)
+    labels = np.array(labels)
+
     # Calculate the number of training samples (80% of total data)
     n_train = int(0.8 * len(inputs))
 
@@ -46,18 +53,19 @@ def load_data():
     return train_input, train_label, test_input, test_label
 
 
+
 train_inputs, train_labels, test_inputs, test_labels = load_data()
 population = []
 population_size = 1000
 num_offsprings = 500
 mutation_rate = 1500
 generations = 200
-convergence_limit = 30
+convergence_limit = 10
 
 
 class NeuralNetwork:
     def __init__(self, layer_sizes, matrix=[], new=True):
-        self.regularization_lambda = 0.3
+        self.regularization_lambda = 5
         self.layer_sizes = layer_sizes
         if new:
             self.network = self._initialize_network()
@@ -140,14 +148,26 @@ class NeuralNetwork:
         return accuracy
 
 
+def write_network_architecture(nn, file_path):
+    with open(file_path, 'w') as f:
+        for i, layer_size in enumerate(nn.layer_sizes[:-1]):
+            f.write(f'Layer {i+1}: {layer_size} neurons\n')
+            f.write(f'Activation function: Sigmoid\n')
+            f.write(f'Weights shape: {nn.network[i].shape}\n')
+            f.write('\n')
+        f.write(f'Layer {len(nn.layer_sizes)} (Output Layer): {nn.layer_sizes[-1]} neurons\n')
+        f.write(f'Activation function: Sigmoid\n')
+
+    print(f"Neural network architecture written to {file_path}.")
+
 def create_population():
     global population_size, population
     for _ in range(population_size):
         # Random number of hidden layers (between 2 and 4)
-        n_hidden_layers = random.randint(1, 3)
+        n_hidden_layers = random.randint(1, 2)
 
         # Random layer sizes (between 5 and 10)
-        layer_sizes = [random.sample([2, 4, 8], 1)[0] for _ in range(n_hidden_layers)]
+        layer_sizes = [random.sample([4, 8, 16], 1)[0] for _ in range(n_hidden_layers)]
 
         # Input layer
         layer_sizes.insert(0, 16)
@@ -232,9 +252,31 @@ class Genetic_Algorithm:
                         # Check if the corresponding mask cell is 1 (True)
                         if mask[i, j]:
                             # Add a random value between -1 and 1 to the current cell
-                            matrix[i, j] += np.random.uniform(-0.05, 0.05)
+                            matrix[i, j] += np.random.uniform(-0.01, 0.01)
             matrix_fit = nn.compute_fitness(train_inputs, train_labels)
             population.append((nn, matrix_fit))
+    def lamark_mut(self,mutation_list, n=3):
+        global population, train_labels, train_inputs
+        for nn, fitness in mutation_list:
+            best_fitness = fitness
+            best_nn = nn
+            for i in range(n):
+                for matrix in nn.network:
+                    # Create a random mask based on the probability
+                    mask = np.random.choice([0, 1], size=matrix.shape, p=[0.9, 0.1])
+                    # Iterate over the matrix
+                    for i, row in enumerate(matrix):
+                        for j, cell in enumerate(row):
+                            # Check if the corresponding mask cell is 1 (True)
+                            if mask[i, j]:
+                                # Add a random value between -1 and 1 to the current cell
+                                matrix[i, j] += np.random.uniform(-0.01, 0.01)
+                                # Check if the network improved
+                matrix_fit = nn.compute_fitness(train_inputs, train_labels)
+                if matrix_fit > best_fitness:
+                    best_fitness = matrix_fit
+                    best_nn = nn
+            population.append((best_nn, best_fitness))
 
     def evolve_pop(self):
         global population, population_size, mutation_rate, generations, convergence_limit
@@ -245,13 +287,15 @@ class Genetic_Algorithm:
             # sort the pop by fitness:
             population = sorted(population, key=lambda x: x[1], reverse=True)
             # save the top 10 nn's (elitism):
-            elitism_list = population[:1]
+            elitism_list = population[:10]
+            # perform lamark on elite:
+            self.lamark_mut(elitism_list)
             # create 50 offsprings using crossover:
             self.crossover(num_offsprings)
             # mutate 20 randon nn's from the population:
             mutation_list = random.sample(population, k=mutation_rate)
             self.mutate(mutation_list)
-            population.extend(elitism_list)
+            #population.extend(elitism_list)
             # sort the list again:
             population = sorted(population, key=lambda x: x[1], reverse=True)
             # take only the top 100 nn's:
@@ -286,6 +330,7 @@ def flow():
     accuracy = chosen_nn[0].compute_fitness(test_inputs, test_labels, True)
     print("on train: ", chosen_nn[1])
     print("accuracy: ", accuracy)
+    write_network_architecture(chosen_nn[0],"chosenNN.txt")
 
     # sort the  fitness list so the smallest fitness will be first:
     # save the top nn's (elitisem):

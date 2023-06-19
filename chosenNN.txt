@@ -1,0 +1,10 @@
+Layer 1: 16 neurons
+Activation function: Sigmoid
+Weights shape: (16, 4)
+
+Layer 2: 4 neurons
+Activation function: Sigmoid
+Weights shape: (4, 1)
+
+Layer 3 (Output Layer): 1 neurons
+Activation function: Sigmoid
