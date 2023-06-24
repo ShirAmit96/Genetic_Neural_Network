@@ -8,6 +8,7 @@ mut_rate = 0.5
 elite_rate = 0.1
 non_mutated_rate = 0.1
 convergence_gens = 10
+
 # This function loads the data from the given file and spilts it into train and test.
 def load_and_spilt_data(file):
     # Read the data from the file
@@ -39,91 +40,94 @@ def load_and_spilt_data(file):
     test_label = labels[n_train:]
     return train_input, train_label, test_input, test_label
 
-class Layer:
-    def __init__(self, input_size, output_size, activation=lambda x: sigmoid(x)):
-        self.weights = np.random.randn(input_size, output_size) * np.sqrt(1 / input_size)
-        self.activation = activation
-    def set_weights(self, weights):
-        self.weights = weights
-    def get_weights(self):
-        return self.weights
-    # Computes the forward propagation of the layer for given inputs
-    def forward(self, inputs):
-        # Calculate output as matrix product of inputs and weights
-        output = np.dot(inputs, self.weights)
-        # Apply the activation function to the output
-        output = self.activation(output)
-        return output
-    # Retrieves the shape of the layer's weights and the activation function.
-    def get_shape(self):
-        return self.weights.shape, self.activation
+
 class NeuralNetwork:
-    def activate_sigmoid(self,x):
-        return 1 / (1 + np.exp(-x))
-    def activate_relu(self,x):
-        return np.maximum(0, x)
-    def __init__(self,input_size,output_size):
-        # List to hold all layers of the neural network
+    class Layer:
+        def __init__(self, input_size, output_size, activation):
+            self.weights = np.random.randn(input_size, output_size) * np.sqrt(1 / input_size)
+            self.activation = activation
+
+        def set_weights(self, weights):
+            self.weights = weights
+
+        def get_weights(self):
+            return self.weights
+
+        def forward(self, inputs):
+            output = np.dot(inputs, self.weights)
+            output = self.activation(output)
+            return output
+
+        def get_shape(self):
+            return self.weights.shape, self.activation
+
+    def __init__(self, input_size, output_size):
         self.layers = []
-        self.add_layer(Layer(input_size, output_size, activation=lambda x: self.activate_sigmoid(x)))
+        self.activate_sigmoid = lambda x: 1 / (1 + np.exp(-x))
+        self.activate_relu = lambda x: np.maximum(0, x)
+        self.add_layer(self.Layer(input_size, output_size, activation=self.activate_sigmoid))
+
     def add_layer(self, layer):
-        # Appends a new layer to the network
         self.layers.append(layer)
+
     def get_layers(self):
-        # Gets the list of layers of the model
         return self.layers
+
     def forward_propagate(self, inputs):
-        # Passes the inputs through each layer of the network
         outputs = inputs
         for layer in self.layers:
             outputs = layer.forward(outputs)
-        # Converts the output of the final layer to binary predictions
         binary_predictions = (outputs > 0.3).astype(int)
         return binary_predictions.flatten()
-    def compute_accuracy(self, lables, pred_labels):
-        correct_predictions = sum(1 for label, pred_label in zip(lables, pred_labels) if label == pred_label)
-        accuracy = correct_predictions / len(lables)
-        return accuracy
-    def fitness(self,inputs,labels):
-        pred_lables = self.forward_propagate(inputs)
-        return self.compute_accuracy(labels, pred_lables)
-    def mutate(self):
-        # choose in probablity of 50 -50 the mutation type:
-        random_value = random.choice([0, 1])
-        if random_value:
-            self.mutate_swap()
-        else:
-            self.mutate_add_value(mut_rate)
-    def mutate_swap(self):
-        # Iterate through each layer in the network
-        for layer in self.layers:
-            if random.uniform(0.0, 1.0) < mut_rate:
-                # Get the shape of the layer weights
-                shape = layer.weights.shape
-                # Generate two different random indices
-                index1, index2 = np.random.choice(np.prod(shape), size=2, replace=False)
-                # Convert the indices to multi-dimensional indices
-                index1 = np.unravel_index(index1, shape)
-                index2 = np.unravel_index(index2, shape)
-                # Perform the weight swap to introduce mutation
-                temp = layer.weights[index1]
-                layer.weights[index1] = layer.weights[index2]
-                layer.weights[index1] = temp
 
-    def mutate_add_value(self, probability):
-        # Iterate through each layer in the network
-        for layer in self.layers:
-            if random.uniform(0.0, 1.0) < probability:
-                # Get the shape of the layer weights
-                shape = layer.weights.shape
-                # Generate a random index
-                index = np.random.choice(np.prod(shape))
-                # Convert the index to multi-dimensional index
-                index = np.unravel_index(index, shape)
-                # Generate a random value from the range [-0.01, 0.01]
-                random_value = random.uniform(-0.01, 0.01)
-                # Add the random value to the selected index
-                layer.weights[index] += random_value
+    def compute_accuracy(self, labels, pred_labels):
+        correct_predictions = sum(1 for label, pred_label in zip(labels, pred_labels) if label == pred_label)
+        accuracy = correct_predictions / len(labels)
+        return accuracy
+
+    def fitness(self, inputs, labels):
+        pred_labels = self.forward_propagate(inputs)
+        return self.compute_accuracy(labels, pred_labels)
+
+
+def mutate(nn):
+    # choose in probablity of 50 -50 the mutation type:
+    random_value = random.choice([0, 1])
+    if random_value:
+        mutate_swap(nn)
+    else:
+        mutate_add_value(nn,mut_rate)
+
+def mutate_swap(nn):
+    # Iterate through each layer in the network
+    for layer in nn.layers:
+        if random.uniform(0.0, 1.0) < mut_rate:
+            # Get the shape of the layer weights
+            shape = layer.weights.shape
+            # Generate two different random indices
+            index1, index2 = np.random.choice(np.prod(shape), size=2, replace=False)
+            # Convert the indices to multi-dimensional indices
+            index1 = np.unravel_index(index1, shape)
+            index2 = np.unravel_index(index2, shape)
+            # Perform the weight swap to introduce mutation
+            temp = layer.weights[index1]
+            layer.weights[index1] = layer.weights[index2]
+            layer.weights[index1] = temp
+
+def mutate_add_value(nn, probability):
+    # Iterate through each layer in the network
+    for layer in nn.layers:
+        if random.uniform(0.0, 1.0) < probability:
+            # Get the shape of the layer weights
+            shape = layer.weights.shape
+            # Generate a random index
+            index = np.random.choice(np.prod(shape))
+            # Convert the index to multi-dimensional index
+            index = np.unravel_index(index, shape)
+            # Generate a random value from the range [-0.01, 0.01]
+            random_value = random.uniform(-0.01, 0.01)
+            # Add the random value to the selected index
+            layer.weights[index] += random_value
 
 
 #  This function creates biased list of parents based on their fitness scores.
@@ -194,7 +198,7 @@ def evolve_population(population, train_samples, train_labels):
         # mutate the offsprings:
         mutated_offsprings = []
         for offspring in offsprings_list:
-            offspring[0].mutate()
+            mutate(offspring[0])
             fitness = offspring[0].fitness(train_samples, train_labels)
             mutated_offsprings.append((offspring[0], fitness))
         # create new population from elite and off springs
