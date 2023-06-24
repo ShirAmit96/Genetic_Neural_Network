@@ -155,7 +155,7 @@ def crossover(num_offsprings, parents_list, train_samples, train_labels):
             num = np.random.uniform(0.0, 1.0, size=parent1.layers[j].weights.shape)
             offspring.layers[j].weights = np.multiply(1 - num, parent1.layers[j].weights) + np.multiply(num,
                                                                                                           parent2.layers[
-                                                                                                              j].weights)
+                                                                                                            j].weights)
         fitness = offspring.fitness(train_samples, train_labels)
         offsprings_list.append((offspring, fitness))
     return offsprings_list
@@ -184,22 +184,23 @@ def evolve_population(population, train_samples, train_labels):
             count_convergence = 0
             mut_rate = 0.5
         history_best_fitness = best_fitness
-
+        # save the top nn's of the population:
         elite_population = sorted_population[:int(len(population) * elite_rate)]
-        offsprings_list = []
+        # select parents in order to create offsprings:
         num_offsprings = len(population) - len(elite_population)
-        selected_parents = create_biased_list(population, train_samples, train_labels)
-        offsprings_list = crossover(num_offsprings, selected_parents, train_samples, train_labels)
-
+        parents_list = create_biased_list(population, train_samples, train_labels)
+        # create offsprings using crossover:
+        offsprings_list = crossover(num_offsprings, parents_list, train_samples, train_labels)
+        # mutate the offsprings:
         mutated_offsprings = []
         for offspring in offsprings_list:
             offspring[0].mutate()
             fitness = offspring[0].fitness(train_samples, train_labels)
             mutated_offsprings.append((offspring[0], fitness))
-
+        # create new population from elite and off springs
         new_population = elite_population + mutated_offsprings
         population = sorted(new_population, key=lambda x: x[1], reverse=True)
-
+    # return the best network and it's fitness:
     best_network = population[0]
     return best_network
 
