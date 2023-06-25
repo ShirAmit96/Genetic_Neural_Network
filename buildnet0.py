@@ -6,7 +6,6 @@ pop_size = 1000
 num_of_gens = 100
 mut_rate = 0.5
 elite_rate = 0.1
-non_mutated_rate = 0.1
 convergence_gens = 10
 
 # This function loads the data from the given file and spilts it into train and test.
