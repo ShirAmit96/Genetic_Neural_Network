@@ -47,37 +47,35 @@ class NeuralNetwork:
             self.weights = np.random.randn(input_size, output_size) * np.sqrt(1 / input_size)
             self.activation = activation
 
-        def set_weights(self, weights):
-            self.weights = weights
+        def get_layers_shape(self):
+            return self.weights.shape, self.activation
 
-        def get_weights(self):
+        def get_layers_weights(self):
             return self.weights
 
-        def forward(self, inputs):
-            output = np.dot(inputs, self.weights)
-            output = self.activation(output)
-            return output
+        def multiply_and_activate(self, inputs):
+            dot_product = np.dot(inputs, self.weights)
+            return self.activation(dot_product)
 
-        def get_shape(self):
-            return self.weights.shape, self.activation
+
 
     def __init__(self, input_size, output_size):
         self.layers = []
         self.activate_sigmoid = lambda x: 1 / (1 + np.exp(-x))
         self.activate_relu = lambda x: np.maximum(0, x)
-        self.add_layer(self.Layer(input_size, output_size, activation=self.activate_sigmoid))
+        self.layers.append(self.Layer(input_size, output_size, activation=self.activate_sigmoid))
 
     def add_layer(self, layer):
         self.layers.append(layer)
 
-    def get_layers(self):
+    def get_all_layers(self):
         return self.layers
 
     def forward_propagate(self, inputs):
-        outputs = inputs
+        result = inputs
         for layer in self.layers:
-            outputs = layer.forward(outputs)
-        binary_predictions = (outputs > 0.6).astype(int)
+            result = layer.multiply_and_activate(result)
+        binary_predictions = (result > 0.6).astype(int)
         return binary_predictions.flatten()
 
     def compute_accuracy(self, labels, pred_labels):
@@ -225,7 +223,7 @@ population = create_population()
 # apply evolution on the population:
 # take the nn with the max fitness, save it's weights and measure accuracy on test:
 best_network, best_fitness = evolve_population(population, train_samples, train_labels)
-layer_1 = best_network.get_layers()[0].get_weights()
+layer_1 = best_network.get_all_layers()[0].get_layers_weights()
 np.savez("wnet0", arr1=layer_1)
 predictions = best_network.forward_propagate(test_samples)
 accuracy = best_network.compute_accuracy(test_labels, predictions)
