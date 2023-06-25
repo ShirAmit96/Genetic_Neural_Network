@@ -88,6 +88,7 @@ class NeuralNetwork:
         return self.compute_accuracy(labels, pred_labels)
 
 
+
 def mutate(nn):
     # choose in probablity of 50 -50 the mutation type:
     random_value = random.choice([0, 1])

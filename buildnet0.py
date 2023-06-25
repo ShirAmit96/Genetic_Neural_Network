@@ -144,6 +144,7 @@ def create_biased_list(population, train_samples, train_labels):
     biased_list = random.choices(sorted_population, weights=biased_indexes, k=num_parents)
     return biased_list
 
+
 # Performs crossover between parent networks to generate offspring networks.
 def crossover(num_offsprings, parents_list, train_samples, train_labels):
     offsprings_list = []
