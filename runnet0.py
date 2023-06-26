@@ -1,0 +1,77 @@
+import numpy as np
+
+class NeuralNetwork:
+    class Layer:
+        def __init__(self, input_size, output_size, activation, weights=None):
+            if weights is not None:
+                self.weights = weights
+            else:
+                self.weights = np.random.randn(input_size, output_size) * np.sqrt(1 / input_size)
+            self.activation = activation
+
+        def get_layers_shape(self):
+            return self.weights.shape, self.activation
+
+        def get_layers_weights(self):
+            return self.weights
+
+        def multiply_and_activate(self, inputs):
+            dot_product = np.dot(inputs, self.weights)
+            return self.activation(dot_product)
+
+    def __init__(self, input_size, output_size, weights=None):
+        self.layers = []
+        self.activate_sigmoid = lambda x: 1 / (1 + np.exp(-x))
+        self.activate_relu = lambda x: np.maximum(0, x)
+        self.layers.append(self.Layer(input_size, output_size, activation=self.activate_sigmoid,weights=weights))
+
+    def add_layer(self, layer):
+        self.layers.append(layer)
+
+    def get_all_layers(self):
+        return self.layers
+
+    def forward_propagate(self, inputs):
+        result = inputs
+        for layer in self.layers:
+            result = layer.multiply_and_activate(result)
+        binary_predictions = (result > 0.6).astype(int)
+        return binary_predictions.flatten()
+
+    def compute_accuracy(self, labels, pred_labels):
+        correct_predictions = sum(1 for label, pred_label in zip(labels, pred_labels) if label == pred_label)
+        accuracy = correct_predictions / len(labels)
+        return accuracy
+
+    def fitness(self, inputs, labels):
+        pred_labels = self.forward_propagate(inputs)
+        return self.compute_accuracy(labels, pred_labels)
+
+def load_test_data(file):
+    # Read the data from the file
+    with open(file, 'r') as f:
+        lines = f.readlines()
+    # Split each line into inputs and labels
+    inputs = []
+    for line in lines:
+        sequence= line.strip()  # strip leading/trailing spaces and split by any whitespace
+        # Convert the binary sequence to a numpy array of integers
+        inputs.append(np.array([int(bit) for bit in sequence]))
+    inputs = np.array(inputs)
+    return inputs
+
+if __name__ == "__main__":
+    loaded_data = np.load("wnet0.npz")
+    print(loaded_data.files)
+    arr1 = loaded_data['arr1']
+    best_network = NeuralNetwork(16, 1,arr1)  # Replace with actual input and output sizes
+    # Load data
+    x_test_inputs = load_test_data("testnet0.txt")
+
+    # Perform inference
+    test_predictions = best_network.forward_propagate(x_test_inputs)
+
+    # Write predictions to a file
+    with open("result0.txt", "w") as file:
+        for label in test_predictions:
+            file.write(str(label) + "\n")
