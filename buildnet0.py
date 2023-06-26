@@ -8,8 +8,17 @@ mut_rate = 0.5
 elite_rate = 0.1
 convergence_gens = 10
 
-# This function loads the data from the given file and spilts it into train and test.
-def load_and_spilt_data(file):
+
+# This function prompts the user to enter paths for test and train data.
+def get_data_paths():
+    train_data_path = input("Enter the path for the train data: ")
+    test_data_path = input("Enter the path for the test data: ")
+
+    return train_data_path,test_data_path,
+
+
+# This function loads the data from the given file and splits it into train and test.
+def load_data(file):
     # Read the data from the file
     with open(file, 'r') as f:
         lines = f.readlines()
@@ -30,14 +39,7 @@ def load_and_spilt_data(file):
     # Convert lists to numpy arrays
     inputs = np.array(inputs)
     labels = np.array(labels)
-    # Calculate the number of training samples (80% of total data)
-    n_train = int(0.8 * len(inputs))
-    # Split the data into training and test sets
-    train_input = inputs[:n_train]
-    train_label = labels[:n_train]
-    test_input = inputs[n_train:]
-    test_label = labels[n_train:]
-    return train_input, train_label, test_input, test_label
+    return inputs, labels
 
 
 class NeuralNetwork:
@@ -167,20 +169,17 @@ def evolve_population(population, train_samples, train_labels):
     history_best_fitness = 0
     count_convergence = 0
     for gen in range(num_of_gens):
-        print(f"Generation {gen + 1}/{num_of_gens}") # delete
         for i in range(len(population)):
             fitness = population[i][0].fitness(train_samples, train_labels)
             population[i] = (population[i][0], fitness)
         sorted_population = sorted(population, key=lambda x: x[1], reverse=True)
         best_fitness = sorted_population[0][1]
-        print(f"Generation {gen + 1} best fitness score: {best_fitness}") # delete
 
         if best_fitness == history_best_fitness:
             count_convergence += 1
             if count_convergence >= 2 and mut_rate < 0.9:
                 mut_rate += 0.05
             if count_convergence >= convergence_gens:
-                print("Convergence reached. stuck for ", convergence_gens, " generations")  # delete
                 break
         else:
             count_convergence = 0
@@ -212,12 +211,14 @@ def create_population():
     population = []
     for i in range(pop_size):
         network = NeuralNetwork(16, 1)
-        population.append((network,0))
+        population.append((network, 0))
     return population
 
 
 # load data and split it into train and test:
-train_samples, train_labels, test_samples, test_labels = load_and_spilt_data("nn0.txt")
+train_file, test_file = get_data_paths()
+train_samples, train_labels = load_data(train_file)
+test_samples, test_labels = load_data(test_file)
 # initialize the population of the nn's:
 population = create_population()
 # apply evolution on the population:
@@ -227,4 +228,4 @@ layer_1 = best_network.get_all_layers()[0].get_layers_weights()
 np.savez("wnet0", arr1=layer_1)
 predictions = best_network.forward_propagate(test_samples)
 accuracy = best_network.compute_accuracy(test_labels, predictions)
-print(f"Test Accuracy: {accuracy}")
+
