@@ -243,7 +243,7 @@ population = create_population()
 # take the nn with the max fitness, save it's weights and measure accuracy on test:
 best_network, best_fitness = evolve_population(population, train_samples, train_labels)
 layer_1 = best_network.get_all_layers()[0].get_layers_weights()
-np.savez("wnet1", arr1=layer_1)
+np.savetxt("wnet1.txt", layer_1)
 # compute accuracy on test data:
 predictions = best_network.forward_propagate(test_samples)
 accuracy = best_network.compute_accuracy(test_labels, predictions)

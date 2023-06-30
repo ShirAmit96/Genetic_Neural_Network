@@ -67,9 +67,9 @@ def load_test_data(file):
     return inputs
 
 if __name__ == "__main__":
-    loaded_data = np.load("wnet1.npz")
-    arr1 = loaded_data['arr1']
-    best_network = NeuralNetwork(16, 1,arr1)  # Replace with actual input and output sizes
+    # Load the values from the text file into a NumPy array
+    layer = np.loadtxt("wnet1.txt")
+    best_network = NeuralNetwork(16, 1, layer)
     # Load data
     x_test_inputs = load_test_data("testnet1.txt")
 
