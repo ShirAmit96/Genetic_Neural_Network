@@ -78,5 +78,8 @@ if __name__ == "__main__":
 
     # Write predictions to a file
     with open("result1.txt", "w") as file:
-        for label in test_predictions:
-            file.write(str(label) + "\n")
+        for i, label in enumerate(test_predictions):
+            if i == len(test_predictions) - 1:
+                file.write(str(label))
+            else:
+                file.write(str(label) + "\n")

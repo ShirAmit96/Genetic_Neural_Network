@@ -74,7 +74,10 @@ if __name__ == "__main__":
     # Perform inference
     test_predictions = best_network.forward_propagate(x_test_inputs)
 
-    # Write predictions to a file
+   # Write predictions to a file
     with open("result0.txt", "w") as file:
-        for label in test_predictions:
-            file.write(str(label) + "\n")
+        for i, label in enumerate(test_predictions):
+            if i == len(test_predictions) - 1:
+                file.write(str(label))
+            else:
+                file.write(str(label) + "\n")
