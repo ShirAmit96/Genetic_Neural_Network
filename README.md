@@ -9,9 +9,6 @@ This repository contains a Neural Network implementation using Genetic Algorithm
 
 # Files 
 `wnet0.txt` - The weights of the Neural Network after the training. 
-
 `wnet1.txt` - The weights of the Neural Network after the training. 
-
 `train0.txt` - Data used for training wnet0. 
-
 `train1.txt` - Data used for training wnet1. 
