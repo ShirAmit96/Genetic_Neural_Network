@@ -2,7 +2,7 @@
 This repository contains a Neural Network implementation using Genetic Algorithm. 
 
 # How to use
-1. Git clone: https://github.com/ShirAmit96/Genetic_Neural_Network.git
+1. git clone https://github.com/ShirAmit96/Genetic_Neural_Network.git
 2. cd Genetic_Neural_Network
 3. Run the desired program.
 4. If you run buildnet you need to proivde the paths of the test and train files, if you run runnet you need to provide the path to the test file.
