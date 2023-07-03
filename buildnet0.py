@@ -10,19 +10,10 @@ convergence_gens = 10
 
 
 # This function loads the data from the given file and splits it into train and test.
-def load_data(type):
-    # Ask file path from the user:
-    valid_file = False
-    file = input(f"Enter the path for the {type} path: ")
-    while not valid_file:
-        try:
-            # Read the data from the file
-            with open(file, 'r') as f:
-                lines = f.readlines()
-                valid_file = True
-        except IOError:
-            file = input(f"Path is not valid! Please enter again the {type} path: ")
-            continue
+def load_data(file):
+    # Read the data from the file
+    with open(file, 'r') as f:
+        lines = f.readlines()
     # Split each line into inputs and labels
     inputs = []
     labels = []
@@ -66,7 +57,7 @@ class NeuralNetwork:
         self.layers = []
         self.activate_sigmoid = lambda x: 1 / (1 + np.exp(-x))
         self.activate_relu = lambda x: np.maximum(0, x)
-        self.layers.append(self.Layer(input_size, output_size, activation=self.activate_sigmoid))
+        self.layers.append(self.Layer(input_size, output_size, activation=self.activate_relu))
 
     # This function returns all the layers in the neural network.
     def get_all_layers(self):
@@ -235,8 +226,8 @@ def create_population():
 
 
 # load data and split it into samples and labels:
-train_samples, train_labels = load_data("train")
-test_samples, test_labels = load_data("test")
+train_samples, train_labels = load_data("train0.txt")
+test_samples, test_labels = load_data("test0.txt")
 print("Choosing best model by performing genetic algorithm...")
 # initialize the population of the nn's:
 population = create_population()
