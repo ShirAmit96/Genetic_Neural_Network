@@ -81,3 +81,10 @@ if __name__ == "__main__":
                 file.write(str(label))
             else:
                 file.write(str(label) + "\n")
+
+    print("Finished inference, results can be found in result0.txt")
+
+    while True:
+        user_input = input("Press x and than enter to end the program: ")
+        if user_input.lower() == 'x':
+            break
