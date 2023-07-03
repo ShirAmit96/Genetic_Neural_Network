@@ -7,9 +7,9 @@ Make sure you place the exe files at the same directory as the data files. The f
 Double click on the desired file to run 
 
 # Files 
-`wnet0.txt` - The weights of the Neural Network after the training. 
+`wnet0.txt` - The weights of the Neural Network after the training - results of `buildnet0`. 
 
-`wnet1.txt` - The weights of the Neural Network after the training. 
+`wnet1.txt` - The weights of the Neural Network after the training - results of `buildnet1`. 
 
 `train0.txt` - Data used for training wnet0. 
 
