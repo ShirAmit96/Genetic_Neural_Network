@@ -19,7 +19,7 @@ Double click on the desired file to run
 
 `test1.txt` - Data used for testing wnet1 when building the model. 
 
-`test0.txt` - Data used for testing wnet0 when testing the model - for `runnet0`. 
+`testnet0.txt` - Data used for testing wnet0 when testing the model - for `runnet0`. 
 
-`test1.txt` - Data used for testing wnet1 when testing the model - for `runnet1`. 
+`testnet1.txt` - Data used for testing wnet1 when testing the model - for `runnet1`. 
 
