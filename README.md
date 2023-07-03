@@ -8,10 +8,18 @@ Double click on the desired file to run
 
 # Files 
 `wnet0.txt` - The weights of the Neural Network after the training. 
+
 `wnet1.txt` - The weights of the Neural Network after the training. 
+
 `train0.txt` - Data used for training wnet0. 
+
 `train1.txt` - Data used for training wnet1. 
+
 `test0.txt` - Data used for testing wnet0 when building the model. 
+
 `test1.txt` - Data used for testing wnet1 when building the model. 
+
 `test0.txt` - Data used for testing wnet0 when testing the model - for `runnet0`. 
+
 `test1.txt` - Data used for testing wnet1 when testing the model - for `runnet1`. 
+
