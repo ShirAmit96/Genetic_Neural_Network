@@ -241,3 +241,7 @@ predictions = best_network.forward_propagate(test_samples)
 accuracy = best_network.compute_accuracy(test_labels, predictions)
 print("The best model's accuracy on test data is: ", accuracy)
 
+while True:
+        user_input = input("Press x and than enter to end the program: ")
+        if user_input.lower() == 'x':
+            break
